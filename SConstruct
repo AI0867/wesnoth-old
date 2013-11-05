@@ -350,7 +350,10 @@ if env["prereqs"]:
         conf.CheckBoostIostreamsBZip2() and \
         conf.CheckBoost("smart_ptr", header_only = True) and \
         conf.CheckBoost("system") and \
-        ((not env["boostfilesystem"]) or (conf.CheckBoost("filesystem", require_version = "1.44.0"))) or Warning("Base prerequisites are not met.")
+        ((not env["boostfilesystem"]) or (\
+            conf.CheckBoost("filesystem", require_version = "1.44.0") and \
+            conf.CheckBoost("locale") \
+        )) or Warning("Base prerequisites are not met.")
 
     env = conf.Finish()
     client_env = env.Clone()

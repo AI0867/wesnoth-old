@@ -60,6 +60,7 @@ def CheckBoost(context, boost_lib, require_version = None, header_only = False):
                       "iostreams" : "iostreams/constants.hpp",
                       "unit_test_framework" : "test/unit_test.hpp",
                       "filesystem" : "filesystem/operations.hpp",
+                      "locale" : "locale.hpp",
                       "system" : "system/error_code.hpp"}
 
     header_name = boost_headers.get(boost_lib, boost_lib + ".hpp")

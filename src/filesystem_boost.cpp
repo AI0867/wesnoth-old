@@ -25,10 +25,14 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/foreach.hpp>
+#include <boost/locale.hpp>
 #include <boost/system/windows_error.hpp>
 #include <set>
 
+
 #ifdef _WIN32
+//#include <boost/iostreams/device/file_descriptor.hpp>
+//#include <boost/iostreams/stream.hpp>
 #include <windows.h>
 #endif /* !_WIN32 */
 
@@ -571,6 +575,18 @@ bool delete_file(const std::string &filename)
 	return ret;
 }
 
+static path unicode_path(const std::string &name)
+{
+	static bool imbued = false;
+	if (!imbued) {
+		// Boost uses the current locale to generate a UTF-8 one
+		std::locale loc = boost::locale::generator().generate("");
+		boost::filesystem::path::imbue(loc);
+		imbued = true;
+	}
+	return path(name);
+}
+
 std::string read_file(const std::string &fname)
 {
 	scoped_istream is = istream_file(fname);
@@ -589,17 +605,39 @@ std::istream *istream_file(const std::string &fname)
 		return s;
 	}
 
-	bfs::ifstream *s = new bfs::ifstream(path(fname),std::ios_base::binary);
-	if (s->is_open())
-		return s;
-	ERR_FS << "Could not open '" << fname << "' for reading.\n";
+	path p = unicode_path(fname);
+//#ifdef _WIN32
+//	HANDLE h = CreateFileW(p.wstring().c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+//	boost::iostreams::file_descriptor_source fd(h, boost::iostreams::close_handle);
+//	if (!fd.is_open()) {
+//		ERR_FS << "Could not open '" << fname << "' for reading.\n";
+//	}
+//	return new boost::iostreams::stream<boost::iostreams::file_descriptor_source>(fd, 4096, 0);
+//#else
+	//boost::iostreams::file_descriptor_source fd(fname);
+	//return new boost::iostreams::stream<boost::iostreams::file_descriptor_source>(fd, 4096, 0);
+	bfs::ifstream *s = new bfs::ifstream(p, std::ios_base::binary);
+	if (!s->is_open()) {
+		ERR_FS << "Could not open '" << fname << "' for reading.\n";
+	}
 	return s;
-
+//#endif
 }
+
 std::ostream *ostream_file(std::string const &fname)
 {
 	LOG_FS << "streaming " << fname << " for writing.\n";
-	return new bfs::ofstream(path(fname), std::ios_base::binary);
+	path p = unicode_path(fname);
+//#ifdef _WIN32
+//	//path p(fname);
+//	HANDLE h = CreateFileW(p.wstring().c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+//	boost::iostreams::file_descriptor_sink fd(h, boost::iostreams::close_handle);
+//	return new boost::iostreams::stream<boost::iostreams::file_descriptor_sink>(fd, 4096, 0);
+//#else
+	//boost::iostreams::file_descriptor_sink fd(fname);
+	//return new boost::iostreams::stream<boost::iostreams::file_descriptor_sink>(fd, 4096, 0);
+	return new bfs::ofstream(p, std::ios_base::binary);
+//#endif
 }
 // Throws io_exception if an error occurs
 void write_file(const std::string& fname, const std::string& data)
