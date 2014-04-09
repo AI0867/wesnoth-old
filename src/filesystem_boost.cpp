@@ -59,6 +59,19 @@ namespace {
 	const std::string initialcfg_filename = "_initial.cfg";
 }
 
+namespace {
+class static_runner {
+public:
+	static_runner() {
+		// Boost uses the current locale to generate a UTF-8 one
+		std::locale utf8_loc = boost::locale::generator().generate("");
+		boost::filesystem::path::imbue(utf8_loc);
+	}
+};
+
+static static_runner static_bfs_path_imbuer;
+}
+
 namespace filesystem {
 
 static void push_if_exists(std::vector<std::string> *vec, const path &file, bool full) {
@@ -575,18 +588,6 @@ bool delete_file(const std::string &filename)
 	return ret;
 }
 
-static path unicode_path(const std::string &name)
-{
-	static bool imbued = false;
-	if (!imbued) {
-		// Boost uses the current locale to generate a UTF-8 one
-		std::locale loc = boost::locale::generator().generate("");
-		boost::filesystem::path::imbue(loc);
-		imbued = true;
-	}
-	return path(name);
-}
-
 std::string read_file(const std::string &fname)
 {
 	scoped_istream is = istream_file(fname);
@@ -605,7 +606,7 @@ std::istream *istream_file(const std::string &fname)
 		return s;
 	}
 
-	path p = unicode_path(fname);
+	path p = fname;
 //#ifdef _WIN32
 //	HANDLE h = CreateFileW(p.wstring().c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 //	boost::iostreams::file_descriptor_source fd(h, boost::iostreams::close_handle);
@@ -627,7 +628,7 @@ std::istream *istream_file(const std::string &fname)
 std::ostream *ostream_file(std::string const &fname)
 {
 	LOG_FS << "streaming " << fname << " for writing.\n";
-	path p = unicode_path(fname);
+	path p = fname;
 //#ifdef _WIN32
 //	//path p(fname);
 //	HANDLE h = CreateFileW(p.wstring().c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
